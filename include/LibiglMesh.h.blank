@@ -1,0 +1,27 @@
+// Copyright (C) 2017 Minhyuk Sung <mhsung@cs.stanford.edu>
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
+//
+
+#ifndef LIBIGL_MESH_H
+#define LIBIGL_MESH_H
+
+#include "LibiglMeshT.h"
+
+using namespace Eigen;
+
+
+class LibiglMesh : public LibiglMeshT {
+  public:
+    LibiglMesh() : LibiglMeshT() {};
+    LibiglMesh(LibiglMeshRendererT* _renderer) : LibiglMeshT(_renderer) {};
+
+  protected:
+    virtual void processing() {
+      // Do something...
+    }
+};
+
+#endif	// LIBIGL_MESH_H
