@@ -57,20 +57,6 @@ void LibiglMeshViewer::set_vertex_normals(const Eigen::MatrixXd& _VN) {
 	viewer_.data.add_edges(V, V + _VN * avg, green);
 }
 
-void LibiglMeshViewer::set_vertex_curvatures(
-		const Eigen::MatrixXd& _VPD1, const Eigen::MatrixXd& _VPD2,
-		const Eigen::VectorXd& _VPV1, const Eigen::VectorXd& _VPV2) {
-	const auto& V = viewer_.data.V;
-	const auto& F = viewer_.data.F;
-	const double avg = 0.5 * igl::avg_edge_length(V, F);
-
-	const RowVector3d red(0.8, 0.2, 0.2);
-	viewer_.data.add_edges(V - _VPD1 * avg, V + _VPD1 * avg, red);
-
-	const RowVector3d blue(0.2, 0.2, 0.8);
-	viewer_.data.add_edges(V - _VPD2 * avg, V + _VPD2 * avg, blue);
-}
-
 void LibiglMeshViewer::set_point_cloud(const Eigen::MatrixXd& _P) {
   viewer_.data.points.resize(_P.rows(), 6);
   viewer_.data.points.leftCols(3) = _P;
@@ -93,39 +79,6 @@ void LibiglMeshViewer::set_point_normals(const Eigen::MatrixXd& _PN) {
 
 	const RowVector3d green(0.2, 0.8, 0.2);
 	viewer_.data.add_edges(P, P + _PN * avg, green);
-}
-
-void LibiglMeshViewer::set_point_curvatures(
-		const Eigen::MatrixXd& _PPD1, const Eigen::MatrixXd& _PPD2,
-		const Eigen::VectorXd& _PPV1, const Eigen::VectorXd& _PPV2) {
-	const auto& P = viewer_.data.points.leftCols(3);
-	const auto& V = viewer_.data.V;
-	const auto& F = viewer_.data.F;
-	const double avg = 0.1 * igl::avg_edge_length(V, F);
-
-	const RowVector3d red(0.8, 0.2, 0.2);
-	viewer_.data.add_edges(P - _PPD1 * avg, P + _PPD1 * avg, red);
-
-	const RowVector3d blue(0.2, 0.2, 0.8);
-	viewer_.data.add_edges(P - _PPD2 * avg, P + _PPD2 * avg, blue);
-}
-
-void LibiglMeshViewer::set_primitives(
-    const std::vector<PrimitivePtr>& _primitives) {
-  // TO BE IMPLEMENTED.
-}
-
-void LibiglMeshViewer::set_primitive_colors(const Eigen::MatrixXf& _C) {
-  // TO BE IMPLEMENTED.
-}
-
-void LibiglMeshViewer::set_symmetries(
-    const std::vector<SymmetryPtr>& _symmetries) {
-  // TO BE IMPLEMENTED.
-}
-
-void LibiglMeshViewer::set_symmetry_colors(const Eigen::MatrixXf& _C) {
-  // TO BE IMPLEMENTED.
 }
 
 void LibiglMeshViewer::run_loop() {

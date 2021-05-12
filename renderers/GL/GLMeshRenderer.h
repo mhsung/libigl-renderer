@@ -46,28 +46,12 @@ class GLMeshRenderer : public LibiglMeshRendererT {
         const Eigen::MatrixXd& _V, const Eigen::MatrixXi& _F);
     virtual void set_face_colors(const Eigen::MatrixXf& _FC);
 		virtual void set_vertex_normals(const Eigen::MatrixXd& _VN);
-    virtual void set_vertex_curvatures(
-				const Eigen::MatrixXd& _VPD1, const Eigen::MatrixXd& _VPD2,
-				const Eigen::VectorXd& _VPV1, const Eigen::VectorXd& _VPV2);
     virtual void clear_mesh();
 
     virtual void set_point_cloud(const Eigen::MatrixXd& _P);
     virtual void set_point_colors(const Eigen::MatrixXf& _PC);
 		virtual void set_point_normals(const Eigen::MatrixXd& _PN);
-    virtual void set_point_curvatures(
-				const Eigen::MatrixXd& _PPD1, const Eigen::MatrixXd& _PPD2,
-				const Eigen::VectorXd& _PPV1, const Eigen::VectorXd& _PPV2);
-    virtual void set_point_displacements(const Eigen::MatrixXd& _PD);
     virtual void clear_point_cloud();
-
-    virtual void set_primitives(
-        const std::vector<PrimitivePtr>& _primitives);
-    virtual void set_primitive_colors(const Eigen::MatrixXf& _C);
-    virtual void clear_primitives();
-
-    virtual void set_symmetries(
-        const std::vector<SymmetryPtr>& _symmetries);
-    virtual void set_symmetry_colors(const Eigen::MatrixXf& _C);
 
     virtual void run_loop();
 
@@ -78,9 +62,6 @@ class GLMeshRenderer : public LibiglMeshRendererT {
     void render();
     void render_mesh();
     void render_point_cloud();
-    void render_point_cloud_displacement();
-    void render_primitives(const bool _draw_axes);
-    void render_symmetries();
 
   protected:
     // Mesh.
@@ -94,22 +75,11 @@ class GLMeshRenderer : public LibiglMeshRendererT {
     Matrix<double, Dynamic, 3, RowMajor> P_;
     Matrix<float, Dynamic, 3, RowMajor> PC_;
 
-    // Point cloud displacement.
-    Matrix<double, Dynamic, 3, RowMajor> PD_;
-
-    // Primitives.
-    const std::vector<PrimitivePtr>* primitives_;
-    Matrix<float, Dynamic, 3, RowMajor> primitive_colors_;
-
-    // Symmetries.
-    const std::vector<SymmetryPtr>* symmetries_;
-    Matrix<float, Dynamic, 3, RowMajor> symmetry_colors_;
-
     Matrix4f projection_;
     Matrix4f modelview_;
 
-		std::vector<std::string> draw_mode_names_;
-		int draw_mode_idx_;
+    std::vector<std::string> draw_mode_names_;
+    int draw_mode_idx_;
 };
 
 #endif	// GL_MESH_RENDERER_T_H

@@ -33,24 +33,10 @@ class LibiglMeshViewer : public LibiglMeshRendererT {
         const Eigen::MatrixXd& _V, const Eigen::MatrixXi& _F);
     virtual void set_face_colors(const Eigen::MatrixXf& _FC);
     virtual void set_vertex_normals(const Eigen::MatrixXd& _VN);
-    virtual void set_vertex_curvatures(
-				const Eigen::MatrixXd& _VPD1, const Eigen::MatrixXd& _VPD2,
-				const Eigen::VectorXd& _VPV1, const Eigen::VectorXd& _VPV2);
 
     virtual void set_point_cloud(const Eigen::MatrixXd& _P);
     virtual void set_point_colors(const Eigen::MatrixXf& _PC);
 		virtual void set_point_normals(const Eigen::MatrixXd& _PN);
-    virtual void set_point_curvatures(
-				const Eigen::MatrixXd& _PPD1, const Eigen::MatrixXd& _PPD2,
-				const Eigen::VectorXd& _PPV1, const Eigen::VectorXd& _PPV2);
-
-    virtual void set_primitives(
-        const std::vector<PrimitivePtr>& _primitives);
-    virtual void set_primitive_colors(const Eigen::MatrixXf& _C);
-
-    virtual void set_symmetries(
-        const std::vector<SymmetryPtr>& _symmetries);
-    virtual void set_symmetry_colors(const Eigen::MatrixXf& _C);
 
     virtual void run_loop();
     virtual bool snapshot(const std::string& _filename);

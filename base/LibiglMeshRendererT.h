@@ -12,8 +12,6 @@
 #include <string>
 #include <Eigen/Core>
 #include <utils/google_tools.h>
-#include "Primitive.h"
-#include "Symmetry.h"
 
 using namespace Eigen;
 
@@ -33,9 +31,9 @@ class LibiglMeshRendererT {
     bool read_modelview(const std::string& _filename);
     bool write_projection(const std::string& _filename) const;
     bool write_modelview(const std::string& _filename) const;
-		void reset_projection();
-		void reset_modelview();
-		void set_window_size(const int _width, const int _height);
+    void reset_projection();
+    void reset_modelview();
+    void set_window_size(const int _width, const int _height);
     void set_scene_pos(const Vector3f& _center, const float _radius);
 
     // Camera parameters: azimuch, elevation, theta (in degrees).
@@ -53,28 +51,12 @@ class LibiglMeshRendererT {
         const Eigen::MatrixXd& _V, const Eigen::MatrixXi& _F) = 0;
     virtual void set_face_colors(const Eigen::MatrixXf& _FC) = 0;
     virtual void set_vertex_normals(const Eigen::MatrixXd& _VN) = 0;
-    virtual void set_vertex_curvatures(
-				const Eigen::MatrixXd& _VPD1, const Eigen::MatrixXd& _VPD2,
-				const Eigen::VectorXd& _VPV1, const Eigen::VectorXd& _VPV2) = 0;
     virtual void clear_mesh() = 0;
 
     virtual void set_point_cloud(const Eigen::MatrixXd& _P) = 0;
     virtual void set_point_colors(const Eigen::MatrixXf& _PC) = 0;
     virtual void set_point_normals(const Eigen::MatrixXd& _PN) = 0;
-    virtual void set_point_curvatures(
-				const Eigen::MatrixXd& _PPD1, const Eigen::MatrixXd& _PPD2,
-				const Eigen::VectorXd& _PPV1, const Eigen::VectorXd& _PPV2) = 0;
-    virtual void set_point_displacements(const Eigen::MatrixXd& _PD) = 0;
     virtual void clear_point_cloud() = 0;
-
-    virtual void set_primitives(
-        const std::vector<PrimitivePtr>& _primitives) = 0;
-    virtual void set_primitive_colors(const Eigen::MatrixXf& _C) = 0;
-    virtual void clear_primitives() = 0;
-
-    virtual void set_symmetries(
-        const std::vector<SymmetryPtr>& _symmetries) = 0;
-    virtual void set_symmetry_colors(const Eigen::MatrixXf& _C) = 0;
 
     void set_point_radius(const float _radius) { point_radius_ = _radius; }
 
@@ -85,8 +67,8 @@ class LibiglMeshRendererT {
     int width_;
     int height_;
 
-		Vector3f center_;
-		float radius_;
+    Vector3f center_;
+    float radius_;
 
     // Point radius for rendering.
     float point_radius_;

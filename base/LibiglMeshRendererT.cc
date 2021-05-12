@@ -16,15 +16,15 @@
 
 DEFINE_double(fovy_deg, 45.0, "fovy angle degree.");
 DEFINE_double(camera_distance, 3.0, "camera distance.");
-DEFINE_double(point_radius, 0.05, "point radius.");
+DEFINE_double(point_radius, 0.01, "point radius.");
 DEFINE_bool(auto_adjust_camera, true, "auto-adjust camera.");
 
 
 LibiglMeshRendererT::LibiglMeshRendererT(const int _width, const int _height)
   : width_(_width),
     height_(_height),
-		center_(Vector3f::Zero()),
-		radius_(1.0f),
+    center_(Vector3f::Zero()),
+    radius_(1.0f),
     point_radius_(FLAGS_point_radius) {
 }
 
@@ -81,7 +81,7 @@ void LibiglMeshRendererT::reset_modelview() {
 }
 
 void LibiglMeshRendererT::set_window_size(
-		const int _width, const int _height) {
+    const int _width, const int _height) {
 	width_ = _width;
 	height_ = _height;
 	reset_projection();
@@ -114,7 +114,7 @@ Vector3f LibiglMeshRendererT::get_camera_params() const {
   Vector3f camera_params;
   // Y-axis (Azimuth, [R_y | 0])
   // Note: Change the sign.
-  camera_params[0] = -angles[2] / M_PI * 180.0;
+  camera_params[0] = (-angles[2] / M_PI * 180.0) + 90;
 
   // X-axis (Elevation, [R_x | 0])
   camera_params[1] = +angles[1] / M_PI * 180.0;
@@ -147,7 +147,7 @@ Vector3f LibiglMeshRendererT::get_camera_params() const {
 
 void LibiglMeshRendererT::set_camera_params(const Vector3f& _camera_params,
     const Vector3f& _center, const float _radius) {
-  const float azimuth_deg = _camera_params[0];
+  const float azimuth_deg = _camera_params[0] - 90;
   const float elevation_deg = _camera_params[1];
   const float theta_deg = _camera_params[2];
 

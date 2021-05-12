@@ -1,4 +1,4 @@
 [submodule "libigl"]
 	path = libigl
-	url = https://github.com/libigl/libigl
+	url = https://github.com/libigl/libigl.git
 	branch = v2.3.0

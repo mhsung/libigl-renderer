@@ -31,45 +31,6 @@ DEFINE_string(out_point_set_center, "", "");
 DEFINE_bool(pca_align_point_set, false, "");
 DEFINE_string(out_pca_transformation, "", "");
 
-// Additional processing.
-DEFINE_bool(run_face_labeling, false, "");
-DEFINE_bool(run_part_disassembly, false, "");
-DEFINE_bool(run_component_disassembly, false, "");
-DEFINE_bool(run_point_transformation, false, "");
-DEFINE_bool(run_barycenter_coloring, false, "");
-DEFINE_bool(run_contacting_point_labeling, false, "");
-
-// Face labeling params.
-DEFINE_string(in_point_label_probs, "", "Input label probabilities per point.");
-DEFINE_string(out_face_labels, "", "output face label file.");
-
-// Part disassembly params.
-DEFINE_string(out_part_mesh_dir, "", "output part mesh directory.");
-DEFINE_string(out_part_mesh_unnormalized_dir, "",
-    "output unnormalized part mesh directory.");
-DEFINE_string(out_part_mesh_face_map_dir, "",
-    "directory of output part mesh face map to input mesh.");
-
-// Component disassembly params.
-DEFINE_string(out_component_mesh_dir, "", "output component mesh directory.");
-DEFINE_string(out_component_mesh_unnormalized_dir, "",
-    "output unnormalized component mesh directory.");
-//DEFINE_string(out_component_mesh_face_map_dir, "",
-//    "directory of output component mesh face map to input mesh.");
-DEFINE_string(out_component_mesh_face_map_file, "",
-              "file of output component mesh face map to input mesh.");
-DEFINE_int32(min_num_components, 3, "");
-DEFINE_double(min_component_bbox_diagonal, 0.05, "");
-DEFINE_bool(find_symmetric_components, false, "");
-
-// Barycenter-based mesh coloring params.
-DEFINE_string(coloring_reference_mesh, "", "");
-
-/*
-// Contacting point labeling params.
-DEFINE_double(max_contacting_squared_distance, 0.005 * 0.005, "");
-*/
-
 
 void LibiglMesh::mesh_processing() {
   bool mesh_modified = false;
@@ -165,37 +126,4 @@ void LibiglMesh::point_set_processing() {
 void LibiglMesh::processing() {
   mesh_processing();
   point_set_processing();
-
-  if (FLAGS_run_face_labeling) {
-    //processing_project_points_labels_to_mesh(
-    //    FLAGS_out_face_labels);
-    processing_MRF_with_point_label_probs(
-        FLAGS_in_point_label_probs, FLAGS_out_face_labels);
-  }
-
-  if (FLAGS_run_part_disassembly) {
-    processing_disassemble_to_parts(
-        FLAGS_out_part_mesh_dir,
-        FLAGS_out_part_mesh_unnormalized_dir,
-        FLAGS_out_part_mesh_face_map_dir);
-  }
-  else if (FLAGS_run_component_disassembly) {
-    processing_disassemble_to_components(
-        FLAGS_out_component_mesh_dir,
-        FLAGS_out_component_mesh_unnormalized_dir,
-        FLAGS_out_component_mesh_face_map_file,
-        FLAGS_min_num_components,
-        FLAGS_min_component_bbox_diagonal,
-        FLAGS_find_symmetric_components);
-  }
-  else if (FLAGS_run_barycenter_coloring) {
-    processing_color_barycenter(FLAGS_coloring_reference_mesh);
-  }
-  /*
-  else if (FLAGS_run_contacting_point_labeling) {
-    processing_label_contacting_points(
-        FLAGS_out_point_labels,
-        FLAGS_max_contacting_squared_distance);
-  }
-  */
 }

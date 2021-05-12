@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
 
-# Set whether use OSMesa or GLUT
+# Set whether use OSMesa.
 option(USE_OSMESA   "Use OSMesa Mesh Renderer"  ON)
-option(USE_GLUT     "Use GLUT Mesh Renderer"    OFF)
 
 if (USE_OSMESA)
   project(OSMesaRenderer)
   message(STATUS "== Use OSMesa Mesh Renderer ==")
-elseif (USE_GLUT)
-  project(GlutViewer)
-  message(STATUS "== Use GLUT Mesh Renderer ==")
 else()
   project(LibiglViewer)
   message(STATUS "== Use Libigl Mesh Renderer ==")
@@ -53,24 +49,6 @@ if (USE_OSMESA)
   FILE(GLOB RENDERER_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/GL/*.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/osmesa/*.cc")
-elseif (USE_GLUT)
-  add_definitions(-DUSE_GLUT)
-  find_package(OpenGL REQUIRED)
-  if (NOT OPENGL_FOUND)
-    message(FATAL_ERROR "OpenGL not found")
-  endif()
-  find_package(FreeGLUT REQUIRED)
-  if (NOT FREEGLUT_FOUND)
-    message(FATAL_ERROR "FreeGLUT not found")
-  endif()
-  include_directories(
-    ${OPENGL_INCLUDE_DIR}
-    ${FREEGLUT_INCLUDE_DIR}
-    "${CMAKE_CURRENT_SOURCE_DIR}/renderers/GL"
-    "${CMAKE_CURRENT_SOURCE_DIR}/renderers/glut")
-  FILE(GLOB RENDERER_FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/renderers/GL/*.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/renderers/glut/*.cc")
 else()
   include_directories("${CMAKE_CURRENT_SOURCE_DIR}/renderers/libigl")
   FILE(GLOB RENDERER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/renderers/libigl/*.cc")
@@ -104,8 +82,6 @@ target_link_libraries(${PROJECT_NAME} igl::core igl::embree igl::png)
 
 if (USE_OSMESA)
   target_link_libraries(${PROJECT_NAME} ${OSMESA_LIBRARY})
-elseif (USE_GLUT)
-  target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${FREEGLUT_LIBRARIES})
 else ()
   target_link_libraries(${PROJECT_NAME} igl::opengl igl::opengl_glfw)
 endif()

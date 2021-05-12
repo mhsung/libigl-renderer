@@ -191,10 +191,9 @@ std::vector<size_t> argsort(const Array& _vec, bool decrease) {
 }
 
 template <typename Derived, typename Array>
-PlainObjectBase<Derived> slice_rows(
-    const PlainObjectBase<Derived>& _mat, const Array& _idxs) {
+Derived slice_rows(const Derived& _mat, const Array& _idxs) {
   const int n = _idxs.size();
-  PlainObjectBase<Derived> ret;
+  Derived ret;
   ret.resize(n, _mat.cols());
 
   int count = 0;
@@ -209,10 +208,9 @@ PlainObjectBase<Derived> slice_rows(
 }
 
 template <typename Derived, typename Array>
-PlainObjectBase<Derived> slice_cols(
-    const PlainObjectBase<Derived>& _mat, const Array& _idxs) {
+Derived slice_cols(const Derived& _mat, const Array& _idxs) {
   const int n = _idxs.size();
-  PlainObjectBase<Derived> ret;
+  Derived ret;
   ret.resize(_mat.rows(), n);
 
   int count = 0;

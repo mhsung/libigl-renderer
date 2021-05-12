@@ -10,7 +10,6 @@
 #include <sstream>
 #include <Eigen/Geometry>
 #include <igl/embree/reorient_facets_raycast.h>
-#include <igl/median.h>
 #include <igl/per_face_normals.h>
 #include <igl/per_vertex_normals.h>
 #include <igl/read_triangle_mesh.h>
@@ -18,15 +17,10 @@
 #include <igl/write_triangle_mesh.h>
 #include <igl/writePLY.h>
 #include <modules/merge_meshes.h>
-#include <modules/principal_curvature_cgal.h>
 #include <utils/filesystem/path.h>
 #include <utils/google_tools.h>
 #include <utils/utils.h>
 #include <utils/SparseICP/ICP.h>
-
-
-const int kNumPointCloudNeighbors = 8;
-const double kZeroTol = 1.0e-6;
 
 
 // Define input variables.
@@ -36,9 +30,6 @@ DEFINE_string(face_labels, "", "face label file.");
 DEFINE_string(point_cloud, "", "point cloud file.");
 DEFINE_string(point_labels, "", "point label file.");
 DEFINE_string(point_values, "", "point value file.");
-DEFINE_string(point_displacements, "", "point displacement file.");
-DEFINE_string(primitives, "", "primitives file.");
-DEFINE_string(symmetries, "", "symmetrys file.");
 DEFINE_double(azimuth_deg, 0.0, "azimuth (degree). "
     "ignored if 'modelview_matrix' is set");
 DEFINE_double(elevation_deg, 0.0, "elevation (degree). "
@@ -53,34 +44,51 @@ DEFINE_string(out_mesh, "", "output mesh file.");
 DEFINE_string(out_face_labels, "", "output face label file.");
 DEFINE_string(out_point_cloud, "", "output point cloud file.");
 DEFINE_string(out_point_labels, "", "output point label file.");
-DEFINE_string(out_primitives, "", "output primitives file.");
-DEFINE_string(out_symmetries, "", "output symmetries file.");
 DEFINE_string(out_projection_matrix, "", "output projection matrix file.");
 DEFINE_string(out_modelview_matrix, "", "output modelview matrix file.");
-DEFINE_string(snapshot_prefix_per_primitive, "",
-		"pre-primitive snapshot file prefix.");
 DEFINE_bool(reorient_faces, false, "reorient mesh faces.");
-DEFINE_bool(draw_mesh_curvatures, false, "draw mesh curvatures.");
-DEFINE_bool(draw_point_cloud_curvatures, false,
-		"draw point cloud curvatures.");
 
 
 LibiglMeshT::LibiglMeshT()
   : renderer_(nullptr),
-	bb_min_(Vector3d(-1.0)),
-	bb_max_(Vector3d(+1.0)),
-	center_(Vector3d::Zero()),
-	radius_(1.0),
-	median_P_nn_dists_(0.0) {
+    mesh_name_(""),
+    V_(MatrixXd(0, 3)),
+    F_(MatrixXi(0, 3)),
+    VC_(MatrixXf(0, 3)),
+    FC_(MatrixXf(0, 3)),
+    VL_(VectorXi(0, 3)),
+    FL_(VectorXi(0, 3)),
+    VN_(MatrixXd(0, 3)),
+    FN_(MatrixXd(0, 3)),
+    P_(MatrixXd(0, 3)),
+    PC_(MatrixXf(0, 3)),
+    PL_(VectorXi(0, 3)),
+    PN_(MatrixXd(0, 3)),
+    bb_min_(Vector3d::Zero()),
+    bb_max_(Vector3d::Zero()),
+    center_(Vector3d::Zero()),
+    radius_(1.0) {
 }
 
 LibiglMeshT::LibiglMeshT(LibiglMeshRendererT* _renderer)
   : renderer_(_renderer),
-	bb_min_(Vector3d(-1.0)),
-	bb_max_(Vector3d(+1.0)),
-	center_(Vector3d::Zero()),
-	radius_(1.0),
-	median_P_nn_dists_(0.0) {
+    mesh_name_(""),
+    V_(MatrixXd(0, 3)),
+    F_(MatrixXi(0, 3)),
+    VC_(MatrixXf(0, 3)),
+    FC_(MatrixXf(0, 3)),
+    VL_(VectorXi(0, 3)),
+    FL_(VectorXi(0, 3)),
+    VN_(MatrixXd(0, 3)),
+    FN_(MatrixXd(0, 3)),
+    P_(MatrixXd(0, 3)),
+    PC_(MatrixXf(0, 3)),
+    PL_(VectorXi(0, 3)),
+    PN_(MatrixXd(0, 3)),
+    bb_min_(Vector3d::Zero()),
+    bb_max_(Vector3d::Zero()),
+    center_(Vector3d::Zero()),
+    radius_(1.0) {
 }
 
 bool LibiglMeshT::read_mesh(const std::string& _filename) {
@@ -180,16 +188,9 @@ bool LibiglMeshT::read_point_cloud(const std::string& _filename) {
   } else {
     MatrixXd X;
 
-    if (ext == "h5") {
-      if (!Utils::read_eigen_matrix_from_hdf5(_filename, "point_cloud", &X)) {
-        LOG(WARNING) << "Can't read the file: '" << _filename << "'.";
-        return false;
-      }
-    } else {
-      if (!Utils::read_eigen_matrix_from_file(_filename, &X, ' ')) {
-        LOG(WARNING) << "Can't read the file: '" << _filename << "'";
-        return false;
-      }
+    if (!Utils::read_eigen_matrix_from_file(_filename, &X, ' ')) {
+      LOG(WARNING) << "Can't read the file: '" << _filename << "'";
+      return false;
     }
 
     if (X.cols() == 7) {
@@ -329,26 +330,6 @@ bool LibiglMeshT::read_point_values(const std::string& _filename) {
   return true;
 }
 
-bool LibiglMeshT::read_point_displacements(const std::string& _filename) {
-  if (!Utils::read_eigen_matrix_from_file(_filename, &PD_, ' ')) {
-    return false;
-  }
-
-  if (PD_.rows() != P_.rows()) {
-    LOG(WARNING) << "Number of point displacements does not match number of "
-      "points.";
-    return false;
-  }
-
-  if (renderer_ == nullptr) {
-    LOG(WARNING) << "Renderer is not set";
-  } else {
-    renderer_->set_point_displacements(PD_);
-  }
-
-  return true;
-}
-
 void LibiglMeshT::set_point_label_colors() {
   if (PL_.rows() != P_.rows()) {
     LOG(WARNING) << "Number of point labels does not match number of points.";
@@ -413,7 +394,7 @@ void LibiglMeshT::update_bounding_box(const MatrixXd& _P) {
 }
 
 void LibiglMeshT::update_bounding_box() {
-  if (V_.rows() == 0 && P_.rows() == 0 && primitives_.empty()) {
+  if (V_.rows() == 0 && P_.rows() == 0) {
     return;
   }
 
@@ -438,18 +419,6 @@ void LibiglMeshT::update_bounding_box() {
       bb_max_[i] = std::max(bb_max_[i], P_bb_max[i]);
     }
   }
-  else if (!primitives_.empty()) {
-    const int kNumSamplesPerPrimitive = 1024;
-    const MatrixXd S = randomly_sample_points_on_primitives(
-        primitives_.size() * kNumSamplesPerPrimitive);
-
-    const auto S_bb_min = S.colwise().minCoeff();
-    const auto S_bb_max = S.colwise().maxCoeff();
-    for (int i = 0; i < 3; ++i) {
-      bb_min_[i] = std::min(bb_min_[i], S_bb_min[i]);
-      bb_max_[i] = std::max(bb_max_[i], S_bb_max[i]);
-    }
-  }
 
   center_ = 0.5 * (bb_min_ + bb_max_);
   radius_ = 0.5 * (bb_max_ - bb_min_).norm();
@@ -463,229 +432,6 @@ bool LibiglMeshT::write_bounding_box(const std::string& _filename) {
     return false;
   }
   return true;
-}
-
-bool LibiglMeshT::read_primitives_json(const std::string& _filename) {
-  std::ifstream file(_filename);
-  if (!file.good()) return false;
-
-  json all_j;
-  file >> all_j;
-  file.close();
-
-  CHECK(all_j.is_array());
-
-  primitives_.clear();
-  for (const auto& j : all_j) {
-		Primitive* new_primitive = Primitive::from_json(j);
-		if (new_primitive != nullptr) {
-
-      // NOTE: Compute cropping parameters if point cloud exists.
-      if (P_.rows() > 0 && P_.rows() == PL_.rows()) {
-        const VectorXi pids = Utils::find(PL_, new_primitive->get_label());
-        MatrixXd primitive_P = Utils::slice_rows(P_, pids);
-        if (primitive_P.rows() > 0) {
-          new_primitive->compute_clipping_params(primitive_P);
-        }
-      }
-
-      primitives_.emplace_back(new_primitive);
-    }
-	}
-  LOG(INFO) << "Read " << primitives_.size() << " primitives.";
-
-  update_bounding_box();
-
-  if (renderer_ == nullptr) {
-    LOG(WARNING) << "Renderer is not set.";
-  } else {
-    renderer_->set_primitives(primitives_);
-    renderer_->set_scene_pos(center_.cast<float>(), (float) radius_);
-  }
-
-  return true;
-}
-
-bool LibiglMeshT::write_primitives_json(const std::string& _filename) {
-  if (primitives_.empty()) {
-    LOG(WARNING) << "No primitive exists.";
-    return false;
-  }
-
-  json all_j;
-  for (const auto& primitive : primitives_) {
-    json j;
-    primitive->to_json(j);
-    all_j.push_back(j);
-  }
-
-  std::ofstream file(_filename);
-  if (!file.good()) return false;
-  file << all_j.dump(2) << std::endl;
-  file.close();
-  LOG(INFO) << "Wrote " << primitives_.size() << " primitives.";
-
-  return true;
-}
-
-bool LibiglMeshT::read_symmetries_json(const std::string& _filename) {
-  std::ifstream file(_filename);
-  if (!file.good()) return false;
-
-  json all_j;
-  file >> all_j;
-  file.close();
-
-  CHECK(all_j.is_array());
-
-  symmetries_.clear();
-  for (const auto& j : all_j) {
-		Symmetry* new_primitive = Symmetry::from_json(j);
-		CHECK(new_primitive != nullptr);
-    symmetries_.emplace_back(new_primitive);
-	}
-  LOG(INFO) << "Read " << symmetries_.size() << " symmetries.";
-
-  update_bounding_box();
-
-  if (renderer_ == nullptr) {
-    LOG(WARNING) << "Renderer is not set.";
-  } else {
-    renderer_->set_symmetries(symmetries_);
-    renderer_->set_scene_pos(center_.cast<float>(), (float) radius_);
-  }
-
-  return true;
-}
-
-bool LibiglMeshT::write_symmetries_json(const std::string& _filename) {
-  if (symmetries_.empty()) {
-    LOG(WARNING) << "No primitive exists.";
-    return false;
-  }
-
-  json all_j;
-  for (const auto& primitive : symmetries_) {
-    json j;
-    primitive->to_json(j);
-    all_j.push_back(j);
-  }
-
-  std::ofstream file(_filename);
-  if (!file.good()) return false;
-  file << all_j.dump(2) << std::endl;
-  file.close();
-  LOG(INFO) << "Wrote " << symmetries_.size() << " symmetries.";
-
-  return true;
-}
-
-void LibiglMeshT::compute_mesh_principal_curvatures(bool _render) {
-	// NOTE:
-	// Vertex normals are updated.
-	LOG(INFO) << "Computing mesh principal curvatures...";
-	MatrixXd old_VN;
-	igl::per_vertex_normals(V_, F_, old_VN);
-	igl::principal_curvatures_mesh(V_, F_, old_VN,
-			VPD1_, VPD2_, VN_, VPV1_, VPV2_);
-
-	if (_render) {
-		if (renderer_ == nullptr) {
-			LOG(WARNING) << "Renderer is not set.";
-		} else {
-			renderer_->set_vertex_curvatures(VPD1_, VPD2_, VPV1_, VPV2_);
-			renderer_->set_vertex_normals(VN_);
-		}
-	}
-
-	LOG(INFO) << "Done.";
-}
-
-void LibiglMeshT::compute_point_cloud_principal_curvatures(bool _render) {
-	// NOTE:
-	// Point cloud normals are updated.
-	LOG(INFO) << "Computing point cloud principal curvatures...";
-	MatrixXd old_PN = PN_;
-	igl::principal_curvatures_point_cloud(P_, old_PN,
-			PPD1_, PPD2_, PN_, PPV1_, PPV2_);
-
-	if (_render) {
-		if (renderer_ == nullptr) {
-			LOG(WARNING) << "Renderer is not set.";
-		} else {
-			renderer_->set_point_curvatures(PPD1_, PPD2_, PPV1_, PPV2_);
-			renderer_->set_point_normals(PN_);
-		}
-	}
-
-	LOG(INFO) << "Done.";
-}
-
-void LibiglMeshT::update_point_cloud_neighbors() {
-	const int n_points = P_.rows();
-  CHECK_GT(n_points, kNumPointCloudNeighbors);
-
-	const Matrix3Xd P_transpose = P_.transpose();
-	nanoflann::KDTreeAdaptor<MatrixBase<Matrix<double, 3, -1, 0, 3, -1>>, 3,
-		nanoflann::metric_L2_Simple> kdtree(P_transpose);
-
-	MatrixXi P_nids_(n_points, kNumPointCloudNeighbors);
-	VectorXd P_nn_dists(n_points);
-	P_nn_dists.setConstant(std::numeric_limits<double>::max());
-
-  for (int pid = 0; pid < n_points; ++pid) {
-		// Find N neighbors and the query point itself.
-    VectorXi idx(kNumPointCloudNeighbors + 1);
-    VectorXd sq_dist(kNumPointCloudNeighbors + 1);
-    kdtree.query(P_transpose.col(pid).data(), kNumPointCloudNeighbors + 1,
-				idx.data(), sq_dist.data());
-
-		// Add neighbors except the query point.
-		int count = 0;
-		for (int i = 0; i < kNumPointCloudNeighbors + 1; ++i) {
-			if (idx[i] == pid) continue;
-
-			CHECK_LT(count, kNumPointCloudNeighbors);
-			P_nids_(pid, count) = idx[i];
-			P_nn_dists(pid) = std::min(P_nn_dists(pid), std::sqrt(sq_dist[i]));
-
-			++count;
-		}
-  }
-
-	igl::median(P_nn_dists, median_P_nn_dists_);
-	LOG(INFO) << "Median of point cloud nearest neighbor distances: "
-		<< median_P_nn_dists_;
-}
-
-MatrixXd LibiglMeshT::randomly_sample_points_on_primitives(const int n_points) {
-  CHECK (!primitives_.empty());
-  const int n_primitives = primitives_.size();
-
-  std::vector<double> areas(n_primitives, 0.0);
-  double sum_area = 0.0;
-  for (int i = 0; i < n_primitives; ++i) {
-    areas[i] = primitives_[i]->area();
-    sum_area += areas[i];
-  }
-  CHECK_GT(sum_area, 0.0);
-
-  MatrixXd points = MatrixXd::Zero(n_points, 3);
-  int starting_index = 0;
-
-  for (int i = 0; i < n_primitives; ++i) {
-    const int n_remaining_points = n_points - starting_index;
-    const int n_primitive_points = std::min(n_remaining_points,
-				static_cast<int>(std::ceil(areas[i] / sum_area * n_points)));
-    const MatrixXd primitive_points =
-        primitives_[i]->randomly_sample_points(n_primitive_points);
-    points.block(starting_index, 0, n_primitive_points, 3) = primitive_points;
-
-    starting_index += n_primitive_points;
-  }
-  CHECK_EQ(starting_index, n_points);
-
-  return points;
 }
 
 void LibiglMeshT::pre_processing() {
@@ -724,29 +470,9 @@ void LibiglMeshT::pre_processing() {
       return;
     }
   }
-
-  if (FLAGS_point_displacements != "") {
-    if (!read_point_displacements(FLAGS_point_displacements)) {
-      return;
-    }
-  }
-
-  if (FLAGS_primitives != "") {
-    if (!read_primitives_json(FLAGS_primitives)) {
-      return;
-    }
-  }
 }
 
 void LibiglMeshT::post_processing() {
-	if (FLAGS_draw_mesh_curvatures) {
-		compute_mesh_principal_curvatures();
-	}
-
-	if (FLAGS_draw_point_cloud_curvatures) {
-		compute_point_cloud_principal_curvatures();
-	}
-
   if (renderer_ == nullptr) {
     LOG(WARNING) << "Renderer is not set.";
   } else {
@@ -799,12 +525,6 @@ void LibiglMeshT::post_processing() {
     }
   }
 
-  if (FLAGS_out_primitives != "") {
-    if (!write_primitives_json(FLAGS_out_primitives)) {
-      return;
-    }
-  }
-
   if (FLAGS_out_projection_matrix != "") {
     if (renderer_ == nullptr) {
       LOG(WARNING) << "Renderer is not set";
@@ -833,32 +553,9 @@ void LibiglMeshT::post_processing() {
       renderer_->snapshot(FLAGS_snapshot);
     }
 #else
-		renderer_->run_loop();
+    renderer_->run_loop();
 #endif
-
-		if (FLAGS_snapshot_prefix_per_primitive != "") {
-			for (int i = 0; i < primitives_.size(); ++i) {
-				std::vector<PrimitivePtr> each_primitive;
-				each_primitive.emplace_back(primitives_[i]->clone());
-				renderer_->set_primitives(each_primitive);
-
-				// NOTE:
-				// The primitive IDs start from 1.
-				Vector3f color;
-				Utils::random_label_rgb_color(i + 1, &color);
-				MatrixXf each_primitive_color(1, 3);
-				each_primitive_color.row(0) = color.transpose();
-				renderer_->set_primitive_colors(each_primitive_color);
-
-				std::stringstream sstr;
-				sstr << FLAGS_snapshot_prefix_per_primitive << "_"
-					<< std::setfill('0') << std::setw(4) << i;
-				renderer_->snapshot(sstr.str());
-			}
-
-			renderer_->set_primitives(primitives_);
-		}
-	}
+  }
 }
 
 void LibiglMeshT::parse_arguments_and_run() {

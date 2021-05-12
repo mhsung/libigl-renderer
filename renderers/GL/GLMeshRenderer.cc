@@ -18,12 +18,10 @@
 
 GLMeshRenderer::GLMeshRenderer(const int _width, const int _height)
   : LibiglMeshRendererT(_width, _height),
-    primitives_(nullptr),
-    symmetries_(nullptr),
-		projection_(Matrix4f::Identity()),
-		modelview_(Matrix4f::Identity()),
-		draw_mode_names_({"Wireframe", "Solid Smooth"}),
-		draw_mode_idx_(draw_mode_names_.size()) {
+    projection_(Matrix4f::Identity()),
+    modelview_(Matrix4f::Identity()),
+    draw_mode_names_({"Wireframe", "Solid Smooth"}),
+    draw_mode_idx_(draw_mode_names_.size()) {
 }
 
 GLMeshRenderer::~GLMeshRenderer() {
@@ -68,12 +66,6 @@ void GLMeshRenderer::set_vertex_normals(const Eigen::MatrixXd& _VN) {
   // TO BE IMPLEMENTED.
 }
 
-void GLMeshRenderer::set_vertex_curvatures(
-		const Eigen::MatrixXd& _VPD1, const Eigen::MatrixXd& _VPD2,
-		const Eigen::VectorXd& _VPV1, const Eigen::VectorXd& _VPV2) {
-  // TO BE IMPLEMENTED.
-}
-
 void GLMeshRenderer::clear_mesh() {
   V_.resize(0, 3);
   F_.resize(0, 3);
@@ -99,86 +91,9 @@ void GLMeshRenderer::set_point_normals(const Eigen::MatrixXd& _PN) {
   LOG(ERROR) << "Not implemented yet.";
 }
 
-void GLMeshRenderer::set_point_curvatures(
-		const Eigen::MatrixXd& _PPD1, const Eigen::MatrixXd& _PPD2,
-		const Eigen::VectorXd& _PPV1, const Eigen::VectorXd& _PPV2) {
-  LOG(ERROR) << "Not implemented yet.";
-}
-
-void GLMeshRenderer::set_point_displacements(const Eigen::MatrixXd& _PD) {
-  CHECK_EQ(_PD.rows(), P_.rows());
-  CHECK_EQ(_PD.cols(), 3);
-  PD_.resize(_PD.rows(), 3);
-  for (int i = 0 ; i < _PD.rows(); ++i) PD_.row(i) = _PD.row(i);
-}
-
 void GLMeshRenderer::clear_point_cloud() {
   P_.resize(0, 3);
   PC_.resize(0, 3);
-}
-
-void GLMeshRenderer::set_primitives(
-    const std::vector<PrimitivePtr>& _primitives) {
-  primitives_ = &_primitives;
-	CHECK_NOTNULL(primitives_);
-
-	// Set default primitive colors by order.
-	// FIXME:
-	// Set colors out of the renderer.
-	const int n_primitives = primitives_->size();
-  primitive_colors_.resize(n_primitives, 3);
-  for (int i = 0 ; i < n_primitives; ++i) {
-    int label = (*primitives_)[i]->get_label();
-    if (label < 0) {
-      LOG(WARNING) << "Primitive label is unassigned.";
-      // NOTE:
-      // The primitive IDs start from 1.
-      label = i + 1;
-    }
-		Vector3f color;
-		Utils::random_label_rgb_color(label, &color);
-		primitive_colors_.row(i) = color.transpose();
-	}
-}
-
-void GLMeshRenderer::set_primitive_colors(const Eigen::MatrixXf& _C) {
-	CHECK_NOTNULL(primitives_);
-  CHECK_EQ(_C.rows(), primitives_->size());
-  CHECK_EQ(_C.cols(), 3);
-  primitive_colors_.resize(_C.rows(), 3);
-  for (int i = 0 ; i < _C.rows(); ++i) primitive_colors_.row(i) = _C.row(i);
-}
-
-void GLMeshRenderer::clear_primitives() {
-  primitives_ = nullptr;
-  primitive_colors_.resize(0, 3);
-}
-
-void GLMeshRenderer::set_symmetries(
-    const std::vector<SymmetryPtr>& _symmetries) {
-  symmetries_ = &_symmetries;
-	CHECK_NOTNULL(symmetries_);
-
-	// Set default symmetry colors by order.
-	// FIXME:
-	// Set colors out of the renderer.
-	const int n_symmetries = symmetries_->size();
-  symmetry_colors_.resize(n_symmetries, 3);
-  for (int i = 0 ; i < n_symmetries; ++i) {
-		// NOTE:
-		// The symmetry IDs start from 1.
-		Vector3f color;
-		Utils::random_label_rgb_color(i + 1, &color);
-		symmetry_colors_.row(i) = color.transpose();
-	}
-}
-
-void GLMeshRenderer::set_symmetry_colors(const Eigen::MatrixXf& _C) {
-	CHECK_NOTNULL(symmetries_);
-  CHECK_EQ(_C.rows(), symmetries_->size());
-  CHECK_EQ(_C.cols(), 3);
-  symmetry_colors_.resize(_C.rows(), 3);
-  for (int i = 0 ; i < _C.rows(); ++i) symmetry_colors_.row(i) = _C.row(i);
 }
 
 void GLMeshRenderer::initialize_opengl() {
@@ -252,8 +167,6 @@ void GLMeshRenderer::render() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glDisable(GL_LIGHTING);
   glLineWidth(8);
-  render_primitives(false);
-  render_point_cloud_displacement();
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glShadeModel(GL_SMOOTH);
@@ -266,8 +179,6 @@ void GLMeshRenderer::render() {
 
   render_point_cloud();
   render_mesh();
-  render_primitives(true);
-  render_symmetries();
 
   glDisable(GL_BLEND);
   set_default_material();
@@ -281,10 +192,8 @@ void GLMeshRenderer::render_mesh() {
   glEnableClientState(GL_VERTEX_ARRAY);
   glVertexPointer(3, GL_DOUBLE, 0, V_.data());
 
-  // NOTE:
-  // Use face normals instead vertex normals.
-  //glEnableClientState(GL_NORMAL_ARRAY);
-  //glNormalPointer(GL_DOUBLE, 0, VN_.data());
+  glEnableClientState(GL_NORMAL_ARRAY);
+  glNormalPointer(GL_DOUBLE, 0, VN_.data());
 
   glBegin(GL_TRIANGLES);
   for (int fid = 0; fid < F_.rows(); ++fid) {
@@ -297,21 +206,23 @@ void GLMeshRenderer::render_mesh() {
       set_default_material();
     }
 
+    // NOTE:
+    // Use vertex normals instead face normals.
+    /*
     // Set face normal.
     const Vector3d normal = FN_.row(fid);
     glNormal3dv(normal.data());
+    */
 
     for (int i = 0; i < 3; ++i) {
       const int vid = F_(fid, i);
       glArrayElement(vid);
-      //const Vector3d vertex = V_.row(vid);
-      //glVertex3dv(vertex.data());
     }
   }
   glEnd();
 
   glDisableClientState(GL_VERTEX_ARRAY);
-  //glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
 }
 
 /*
@@ -355,77 +266,10 @@ void GLMeshRenderer::render_point_cloud() {
 
     glPushMatrix();
     glTranslated(P_(pid, 0), P_(pid, 1), P_(pid, 2));
-    glutSolidSphere(point_radius_, 16, 16);
+    glutSolidSphere(point_radius_ * radius_, 16, 16);
     glPopMatrix();
 
     glArrayElement(pid);
-  }
-}
-
-void GLMeshRenderer::render_point_cloud_displacement() {
-  if (PD_.rows() == 0) return;
-  CHECK_EQ(PD_.rows(), P_.rows());
-
-  glColor4fv(igl::MAYA_CYAN.data());
-
-  glBegin(GL_LINES);
-  for (int pid = 0; pid < P_.rows(); ++pid) {
-    const Vector3d p1 = P_.row(pid);
-    const Vector3d p2 = P_.row(pid) + PD_.row(pid);
-    glVertex3dv(p1.data());
-    glVertex3dv(p2.data());
-  }
-  glEnd();
-
-  set_default_material();
-}
-
-void GLMeshRenderer::render_primitives(const bool _draw_axes) {
-  if (primitives_ == nullptr) return;
-
-  glColor4fv(igl::BLACK);
-
-	const int n_primitives = primitives_->size();
-	CHECK_EQ(primitive_colors_.rows(), n_primitives);
-
-	for (int i = 0; i < n_primitives; ++i) {
-		const Vector4f color(
-				primitive_colors_(i, 0),
-				primitive_colors_(i, 1),
-				primitive_colors_(i, 2),
-				0.5f);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color.data());
-		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color.data());
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, color.data());
-
-		(*primitives_)[i]->render();
-
-    if (_draw_axes) {
-      (*primitives_)[i]->render_axes();
-    }
-  }
-}
-
-void GLMeshRenderer::render_symmetries() {
-  if (symmetries_ == nullptr) return;
-
-	const Vector4f white(1.0f);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white.data());
-
-	const int n_symmetries = symmetries_->size();
-	CHECK_EQ(symmetry_colors_.rows(), n_symmetries);
-
-	for (int i = 0; i < n_symmetries; ++i) {
-		const Vector4f color(
-				symmetry_colors_(i, 0),
-				symmetry_colors_(i, 1),
-				symmetry_colors_(i, 2),
-				1.0f);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color.data());
-		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color.data());
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, color.data());
-
-		(*symmetries_)[i]->render();
   }
 }
 
