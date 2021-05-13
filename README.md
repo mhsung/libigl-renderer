@@ -43,16 +43,25 @@ mkdir snapshots
 cd build
 
 # Rendering a mesh.
-./OSMesaRenderer --mesh=../data/LabeledPSBDataset/161.off --snapshot=../snapshots/161_mesh
+# The rendered image will be stored in '../snapshots/161_mesh.png'.
+./OSMesaRenderer \
+    --mesh=../data/LabeledPSBDataset/161.off \
+    --snapshot=../snapshots/161_mesh
 
 # Rendering a point cloud.
-./OSMesaRenderer --point_cloud=../data/LabeledPSBDataset/161.pts --snapshot=../snapshots/161_pc
+./OSMesaRenderer \
+    --point_cloud=../data/LabeledPSBDataset/161.pts \
+    --snapshot=../snapshots/161_pc
 
 # Rendering a mesh with face labels.
-./OSMesaRenderer --mesh=../data/LabeledPSBDataset/161.off --face_labels=../data/LabeledPSBDataset/161_labels.txt --snapshot=../snapshots/161_mesh_fl
+./OSMesaRenderer --mesh=../data/LabeledPSBDataset/161.off \
+    --face_labels=../data/LabeledPSBDataset/161_labels.txt \
+    --snapshot=../snapshots/161_mesh_fl
 
 # Rendering a point cloud with point scalar values.
-./OSMesaRenderer --point_cloud=../data/LabeledPSBDataset/161.off --point_values=../data/LabeledPSBDataset/161_y.txt --snapshot=../snapshots/161_pc_pv
+./OSMesaRenderer --point_cloud=../data/LabeledPSBDataset/161.off \
+    --point_values=../data/LabeledPSBDataset/161_y.txt \
+    --snapshot=../snapshots/161_pc_pv
 
 # Changing the view point.
 ./OSMesaRenderer \
