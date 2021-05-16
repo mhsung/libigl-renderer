@@ -30,6 +30,7 @@ sudo apt-get -y autoremove && sudo apt-get -y clean
 ### Compile
 ```
 git clone --recursive https://github.com/mhsung/libigl-renderer.git
+cd libigl-renderer
 mkdir build && cd build
 cmake ..
 make -j4
