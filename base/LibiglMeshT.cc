@@ -25,11 +25,12 @@
 
 // Define input variables.
 DEFINE_string(mesh, "", "mesh file.");
-DEFINE_string(meshes, "", "a list of mesh files.");
 DEFINE_string(face_labels, "", "face label file.");
 DEFINE_string(point_cloud, "", "point cloud file.");
 DEFINE_string(point_labels, "", "point label file.");
 DEFINE_string(point_values, "", "point value file.");
+DEFINE_string(meshes, "", "a list of mesh files (separated by comma).");
+DEFINE_string(mesh_labels, "", "a list of mesh labels (separated by comma).");
 DEFINE_double(azimuth_deg, 0.0, "azimuth (degree). "
     "ignored if 'modelview_matrix' is set");
 DEFINE_double(elevation_deg, 0.0, "elevation (degree). "
@@ -123,6 +124,7 @@ bool LibiglMeshT::read_mesh(const std::string& _filename) {
 }
 
 
+/*
 bool LibiglMeshT::read_meshes(const std::string& _filenames) {
   const std::vector<std::string> filenames = Utils::split_string(_filenames);
 
@@ -164,6 +166,63 @@ bool LibiglMeshT::read_meshes(const std::string& _filenames) {
 
   return true;
 }
+*/
+
+bool LibiglMeshT::read_meshes(const std::string& _filenames) {
+  const std::vector<std::string> filenames = Utils::split_string(_filenames);
+  const int n_meshes = filenames.size();
+
+  MatrixXd all_V = MatrixXd(0, 3);
+  MatrixXi all_F = MatrixXi(0, 3);
+
+  std::vector<int> n_faces;
+  int n_total_faces = 0;
+
+  for (const auto filename : filenames) {
+    if (!read_mesh(filename)) return false;
+
+    n_faces.push_back(F_.rows());
+    n_total_faces += F_.rows();
+
+    // Add the mesh.
+    igl::add_mesh(all_V, all_F, V_, F_);
+  }
+
+  V_ = all_V;
+  F_ = all_F;
+  update_bounding_box();
+
+  if (renderer_ == nullptr) {
+    LOG(WARNING) << "Renderer is not set.";
+  } else {
+    renderer_->set_mesh(V_, F_);
+    renderer_->set_scene_pos(center_.cast<float>(), (float) radius_);
+  }
+
+  // Parse labels if given.
+  if (FLAGS_mesh_labels != "") {
+    const auto label_strs = Utils::split_string(FLAGS_mesh_labels);
+    if (label_strs.size() != n_meshes) {
+      LOG(ERROR) << "Numbers of meshes and labels do not match.";
+    }
+    std::vector<int> labels(n_meshes);
+    for (int i = 0; i < n_meshes; ++i) labels[i] = std::stoi(label_strs[i]);
+
+    FL_ = VectorXi(n_total_faces);
+    int fid = 0;
+    for (int i = 0; i < n_meshes; ++i) {
+      for (int j = 0; j < n_faces[i]; ++j) {
+        FL_[fid++] = labels[i];
+      }
+    }
+
+    // Set face colors.
+    set_face_label_colors();
+  }
+
+  return true;
+}
+
 
 bool LibiglMeshT::read_face_labels(const std::string& _filename) {
   FL_ = VectorXi(n_faces());

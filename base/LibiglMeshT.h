@@ -20,11 +20,12 @@ using json = nlohmann::json;
 
 // Declare input variables.
 DECLARE_string(mesh);
-DECLARE_string(meshes);
 DECLARE_string(face_labels);
 DECLARE_string(point_cloud);
 DECLARE_string(point_labels);
 DECLARE_string(point_values);
+DECLARE_string(meshes);
+DECLARE_string(mesh_labels);
 DECLARE_double(azimuth_deg);
 DECLARE_double(elevation_deg);
 DECLARE_double(theta_deg);
