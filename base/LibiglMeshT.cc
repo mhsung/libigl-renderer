@@ -607,7 +607,7 @@ void LibiglMeshT::post_processing() {
   if (renderer_ == nullptr) {
     LOG(WARNING) << "Renderer is not set.";
   } else {
-#ifdef USE_OSMESA
+#ifdef OFFSCREEN
     if (FLAGS_snapshot != "") {
       renderer_->snapshot(FLAGS_snapshot);
     }

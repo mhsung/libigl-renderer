@@ -26,8 +26,8 @@ int main(int argc, char *argv[]) {
   LibiglMeshRendererT* renderer = nullptr;
 
 #ifdef OFFSCREEN 
-  OffscreenRenderer osmesa_renderer(FLAGS_image_width, FLAGS_image_height);
-  renderer = &osmesa_renderer;
+  OffscreenRenderer offscreen_renderer(FLAGS_image_width, FLAGS_image_height);
+  renderer = &offscreen_renderer;
 #else
   LibiglMeshViewer libigl_renderer(FLAGS_image_width, FLAGS_image_height);
   renderer = &libigl_renderer;

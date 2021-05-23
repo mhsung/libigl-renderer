@@ -10,10 +10,6 @@
 
 #include <GLFW/glfw3.h>
 
-#ifdef __APPLE__
-#define GL_SILENCE_DEPRECATION
-#endif
-
 #if GLFW_USE_OSMESA
   #define GLFW_EXPOSE_NATIVE_OSMESA
   #include <GLFW/glfw3native.h>
