@@ -11,12 +11,13 @@
 #define GLUT_GEOMETRY_H
 
 #ifdef __APPLE__
-	#include <OpenGL/gl.h>
+#define GL_SILENCE_DEPRECATION
+#include <OpenGL/gl.h>
 #else
 #ifdef _WIN32
-  #include <windows.h>
+#include <windows.h>
 #endif
-	#include <GL/gl.h>
+#include <GL/gl.h>
 #endif
 
 

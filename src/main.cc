@@ -9,8 +9,8 @@
 
 #include <utils/google_tools.h>
 #include "LibiglMesh.h"
-#ifdef USE_OSMESA
-#include "OSMesaMeshRenderer.h"
+#ifdef OFFSCREEN 
+#include "OffscreenRenderer.h"
 #else
 #include "LibiglMeshViewer.h"
 #endif
@@ -25,8 +25,8 @@ int main(int argc, char *argv[]) {
 
   LibiglMeshRendererT* renderer = nullptr;
 
-#ifdef USE_OSMESA
-  OSMesaMeshRenderer osmesa_renderer(FLAGS_image_width, FLAGS_image_height);
+#ifdef OFFSCREEN 
+  OffscreenRenderer osmesa_renderer(FLAGS_image_width, FLAGS_image_height);
   renderer = &osmesa_renderer;
 #else
   LibiglMeshViewer libigl_renderer(FLAGS_image_width, FLAGS_image_height);

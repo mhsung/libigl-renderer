@@ -387,37 +387,37 @@ bool read_eigen_matrix_from_hdf5(
   try {
     H5::H5File file_h5(_filepath, H5F_ACC_RDONLY);
     H5::DataSet data_set = file_h5.openDataSet(_matrix_name);
-		H5::DataSpace data_space = data_set.getSpace();
+    H5::DataSpace data_space = data_set.getSpace();
 
-		int ndims = data_space.getSimpleExtentNdims();
-		CHECK_EQ(ndims, 2);
-		hsize_t dims[ndims];
-		data_space.getSimpleExtentDims(dims, NULL);
+    int ndims = data_space.getSimpleExtentNdims();
+    CHECK_EQ(ndims, 2);
+    hsize_t dims[ndims];
+    data_space.getSimpleExtentDims(dims, NULL);
 
-		Matrix<Scalar, Row, Column, RowMajor> row_major_matrix(
-				dims[0], dims[1]);
+    Matrix<Scalar, Row, Column, RowMajor> row_major_matrix(
+            dims[0], dims[1]);
 
-		H5::DataType data_type = data_set.getDataType();
-		if (std::is_same<Scalar, int>::value) {
-			CHECK(data_type == H5::PredType::NATIVE_INT) <<
-				"The scalar type does not match: (" << typeid(Scalar).name() << ").";
-		}	else if (std::is_same<Scalar, float>::value) {
-			CHECK(data_type == H5::PredType::NATIVE_FLOAT) <<
-				"The scalar type does not match: (" << typeid(Scalar).name() << ").";
-		} else if (std::is_same<Scalar, double>::value) {
-			CHECK(data_type == H5::PredType::NATIVE_DOUBLE) <<
-				"The scalar type does not match: (" << typeid(Scalar).name() << ").";
-		} else {
-			LOG(ERROR) << "The scalar type does not match: ("
-				<< typeid(Scalar).name() << ").";
-		}
+    H5::DataType data_type = data_set.getDataType();
+    if (std::is_same<Scalar, int>::value) {
+        CHECK(data_type == H5::PredType::NATIVE_INT) <<
+            "The scalar type does not match: (" << typeid(Scalar).name() << ").";
+    } else if (std::is_same<Scalar, float>::value) {
+        CHECK(data_type == H5::PredType::NATIVE_FLOAT) <<
+            "The scalar type does not match: (" << typeid(Scalar).name() << ").";
+    } else if (std::is_same<Scalar, double>::value) {
+        CHECK(data_type == H5::PredType::NATIVE_DOUBLE) <<
+            "The scalar type does not match: (" << typeid(Scalar).name() << ").";
+    } else {
+        LOG(ERROR) << "The scalar type does not match: ("
+            << typeid(Scalar).name() << ").";
+    }
 
-		data_set.read(row_major_matrix.data(), data_type);
-		(*_matrix) = row_major_matrix;
+    data_set.read(row_major_matrix.data(), data_type);
+    (*_matrix) = row_major_matrix;
   } catch (H5::Exception error) {
-    error.printError();
+    error.printErrorStack();
     LOG(WARNING) << "Can't read the file: '" << _filepath << "'";
-		return false;
+    return false;
   }
   return true;
 }
@@ -454,7 +454,7 @@ bool write_eigen_matrix_to_hdf5(
 				_matrix_name, data_type, data_space);
     data_set.write(row_major_matrix.data(), data_type);
   } catch (H5::Exception error) {
-    error.printError();
+    error.printErrorStack();
     LOG(WARNING) << "Can't write the file: '" << _filepath << "'";
 		return false;
   }

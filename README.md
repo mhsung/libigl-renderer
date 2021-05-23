@@ -20,8 +20,6 @@ sudo apt-get install -y \
     libxmu-dev \
     libgflags-dev \
     libgoogle-glog-dev \
-    libgmp3-dev \
-    libmpfr-dev \
     libhdf5-serial-dev && \
 sudo apt-get -y autoremove && sudo apt-get -y clean
 ```
