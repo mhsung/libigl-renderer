@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.16)
 
 # Set whether use OSMesa.
 option(USE_OSMESA   "Use OSMesa Mesh Renderer"  ON)
@@ -15,13 +15,11 @@ set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-# libigl options: choose your dependencies (by default everything is OFF except opengl)
-option(LIBIGL_WITH_OPENGL        "Use OpenGL"         ON)
-option(LIBIGL_WITH_OPENGL_GLFW   "Use GLFW"           ON)
-option(LIBIGL_WITH_EMBREE        "Use Embree"         ON)
-option(LIBIGL_WITH_PNG           "Use PNG"            ON)
-
-find_package(LIBIGL REQUIRED)
+option(LIBIGL_EMBREE  "igl::embree" ON)
+option(LIBIGL_GLFW    "igl::glfw"   ON)
+option(LIBIGL_OPENGL  "igl::opengl" ON)
+option(LIBIGL_PNG     "igl::png"    ON)
+include(libigl)
 
 include_directories(
         "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -78,12 +76,12 @@ link_directories(${HDF5_LIBRARY_DIRS})
 
 # Add project files
 add_executable(${PROJECT_NAME} ${SRC_FILES} ${RENDERER_FILES})
-target_link_libraries(${PROJECT_NAME} igl::core igl::embree igl::png)
+target_link_libraries(${PROJECT_NAME} igl::embree igl::png)
 
 if (USE_OSMESA)
   target_link_libraries(${PROJECT_NAME} ${OSMESA_LIBRARY})
 else ()
-  target_link_libraries(${PROJECT_NAME} igl::opengl igl::opengl_glfw)
+  target_link_libraries(${PROJECT_NAME} igl::opengl igl::glfw)
 endif()
 
 target_link_libraries(${PROJECT_NAME}

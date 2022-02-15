@@ -415,7 +415,7 @@ bool read_eigen_matrix_from_hdf5(
 		data_set.read(row_major_matrix.data(), data_type);
 		(*_matrix) = row_major_matrix;
   } catch (H5::Exception error) {
-    error.printError();
+    error.printErrorStack();
     LOG(WARNING) << "Can't read the file: '" << _filepath << "'";
 		return false;
   }
@@ -454,7 +454,7 @@ bool write_eigen_matrix_to_hdf5(
 				_matrix_name, data_type, data_space);
     data_set.write(row_major_matrix.data(), data_type);
   } catch (H5::Exception error) {
-    error.printError();
+    error.printErrorStack();
     LOG(WARNING) << "Can't write the file: '" << _filepath << "'";
 		return false;
   }
