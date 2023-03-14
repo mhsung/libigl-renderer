@@ -20,10 +20,14 @@ using json = nlohmann::json;
 
 // Declare input variables.
 DECLARE_string(mesh);
+DECLARE_string(vertex_labels);
+DECLARE_string(vertex_values);
+DECLARE_bool(vertex_values_normalized);
 DECLARE_string(face_labels);
 DECLARE_string(point_cloud);
 DECLARE_string(point_labels);
 DECLARE_string(point_values);
+DECLARE_bool(point_values_normalized);
 DECLARE_string(meshes);
 DECLARE_string(mesh_labels);
 DECLARE_double(azimuth_deg);
@@ -58,6 +62,10 @@ class LibiglMeshT {
     bool read_point_cloud(const std::string& _filename);
     bool write_point_cloud(const std::string& _filename);
 
+    bool read_vertex_labels(const std::string& _filename);
+    bool read_vertex_values(const std::string& _filename, bool _normalized);
+    void set_vertex_label_colors();
+
     bool read_face_labels(const std::string& _filename);
     bool write_face_labels(const std::string& _filename);
     void set_face_label_colors();
@@ -65,10 +73,10 @@ class LibiglMeshT {
     bool read_point_labels(const std::string& _filename);
     bool write_point_labels(const std::string& _filename);
 
-    bool read_point_values(const std::string& _filename);
+    bool read_point_values(const std::string& _filename, bool _normalized);
 
     void set_point_label_colors();
-    MatrixXf compute_color_map(const VectorXf& _values);
+    MatrixXf compute_color_map(const VectorXf& _values, bool _normalized);
 
     void update_bounding_box(const MatrixXd& _P);
     void update_bounding_box();

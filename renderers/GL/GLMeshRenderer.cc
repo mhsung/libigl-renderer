@@ -55,6 +55,13 @@ void GLMeshRenderer::set_mesh(
   if (F_.rows() > 0 && V_.rows() > 0) igl::per_vertex_normals(V_, F_, FN_, VN_);
 }
 
+void GLMeshRenderer::set_vertex_colors(const Eigen::MatrixXf& _VC) {
+  CHECK_EQ(_VC.rows(), V_.rows());
+  CHECK_EQ(_VC.cols(), 3);
+  VC_.resize(_VC.rows(), 3);
+  for (int i = 0 ; i < _VC.rows(); ++i) VC_.row(i) = _VC.row(i);
+}
+
 void GLMeshRenderer::set_face_colors(const Eigen::MatrixXf& _FC) {
   CHECK_EQ(_FC.rows(), F_.rows());
   CHECK_EQ(_FC.cols(), 3);
@@ -102,9 +109,6 @@ void GLMeshRenderer::initialize_opengl() {
   glDisable(GL_DITHER);
   glEnable(GL_DEPTH_TEST);
 
-  // Material
-  set_default_material();
-
   // Lighting
   set_default_light();
 
@@ -124,7 +128,7 @@ void GLMeshRenderer::initialize_opengl() {
 void GLMeshRenderer::set_default_material() {
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, igl::SILVER_AMBIENT);
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, igl::SILVER_DIFFUSE);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, igl::SILVER_SPECULAR);
+  //glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, igl::SILVER_SPECULAR);
 }
 
 void GLMeshRenderer::set_default_light() {
@@ -134,12 +138,19 @@ void GLMeshRenderer::set_default_light() {
   GLfloat pos1[] = { 1, 1, -0.2, 0.0 };
   GLfloat pos2[] = { -1, 1, -0.2, 0.0 };
   GLfloat pos3[] = { 0, 0, 1, 0.0 };
-  //GLfloat col1[] = { 0.7, 0.7, 0.8, 1.0 };
-  //GLfloat col2[] = { 0.8, 0.7, 0.7, 1.0 };
-  //GLfloat col3[] = { 1.0, 1.0, 1.0, 1.0 };
+  /*
+  GLfloat col1[] = { 0.7, 0.7, 0.8, 1.0 };
+  GLfloat col2[] = { 0.8, 0.7, 0.7, 1.0 };
+  GLfloat col3[] = { 1.0, 1.0, 1.0, 1.0 };
+  */
+  /*
   GLfloat col1[] = { 0.21, 0.21, 0.24, 1.0 };
   GLfloat col2[] = { 0.24, 0.21, 0.21, 1.0 };
   GLfloat col3[] = { 0.3, 0.3, 0.3, 1.0 };
+  */
+  GLfloat col1[] = { 0.49, 0.49, 0.56, 1.0 };
+  GLfloat col2[] = { 0.56, 0.49, 0.49, 1.0 };
+  GLfloat col3[] = { 0.70, 0.70, 0.70, 1.0 };
 
   glEnable(GL_LIGHT0);
   glLightfv(GL_LIGHT0, GL_POSITION, pos1);
@@ -187,7 +198,8 @@ void GLMeshRenderer::render() {
 }
 
 void GLMeshRenderer::render_mesh() {
-  const bool has_face_color = (FC_.rows() == F_.rows());
+  const bool has_vertex_color = (VC_.rows() == V_.rows());
+  const bool has_face_color = (!has_vertex_color) && (FC_.rows() == F_.rows());
 
   glEnableClientState(GL_VERTEX_ARRAY);
   glVertexPointer(3, GL_DOUBLE, 0, V_.data());
@@ -195,24 +207,27 @@ void GLMeshRenderer::render_mesh() {
   glEnableClientState(GL_NORMAL_ARRAY);
   glNormalPointer(GL_DOUBLE, 0, VN_.data());
 
+  if (has_vertex_color) {
+      glEnable(GL_COLOR_MATERIAL);
+      glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
+      glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+      //glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
+      glEnableClientState(GL_COLOR_ARRAY);
+      glColorPointer(3, GL_FLOAT, 0, VC_.data());
+  } 
+
   glBegin(GL_TRIANGLES);
   for (int fid = 0; fid < F_.rows(); ++fid) {
-    if (has_face_color) {
+    if (has_vertex_color) {
+      // Do nothing.
+    } else if (has_face_color) {
       const Vector4f color(FC_(fid, 0), FC_(fid, 1), FC_(fid, 2), 1.0f);
       glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color.data());
       glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color.data());
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, color.data());
+      //glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, color.data());
     } else {
       set_default_material();
     }
-
-    // NOTE:
-    // Use vertex normals instead face normals.
-    /*
-    // Set face normal.
-    const Vector3d normal = FN_.row(fid);
-    glNormal3dv(normal.data());
-    */
 
     for (int i = 0; i < 3; ++i) {
       const int vid = F_(fid, i);
@@ -223,6 +238,9 @@ void GLMeshRenderer::render_mesh() {
 
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
+  if (has_vertex_color) {
+      glDisableClientState(GL_COLOR_ARRAY);
+  }
 }
 
 /*
@@ -254,14 +272,12 @@ void GLMeshRenderer::render_point_cloud() {
 
   for (int pid = 0; pid < P_.rows(); ++pid) {
     if (has_point_color) {
-      //glColor3fv(color.data());
       const Vector4f color(PC_(pid, 0), PC_(pid, 1), PC_(pid, 2), 1.0f);
       glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color.data());
       glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color.data());
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, color.data());
+      //glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, color.data());
     } else {
       set_default_material();
-      //glColor4fv(igl::MAYA_GREY.data());
     }
 
     glPushMatrix();

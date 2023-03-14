@@ -25,10 +25,14 @@
 
 // Define input variables.
 DEFINE_string(mesh, "", "mesh file.");
+DEFINE_string(vertex_labels, "", "vertex label file.");
+DEFINE_string(vertex_values, "", "vertex value file.");
+DEFINE_bool(vertex_values_normalized, false, "vertex values are in [0, 1] range.");
 DEFINE_string(face_labels, "", "face label file.");
 DEFINE_string(point_cloud, "", "point cloud file.");
 DEFINE_string(point_labels, "", "point label file.");
 DEFINE_string(point_values, "", "point value file.");
+DEFINE_bool(point_values_normalized, false, "point values are in [0, 1] range.");
 DEFINE_string(meshes, "", "a list of mesh files (separated by comma).");
 DEFINE_string(mesh_labels, "", "a list of mesh labels (separated by comma).");
 DEFINE_double(azimuth_deg, 0.0, "azimuth (degree). "
@@ -223,6 +227,37 @@ bool LibiglMeshT::read_meshes(const std::string& _filenames) {
   return true;
 }
 
+bool LibiglMeshT::read_vertex_labels(const std::string& _filename) {
+  if (!Utils::read_eigen_matrix_from_file(_filename, &VL_)) {
+    return false;
+  }
+
+  // Set vertex colors.
+  set_vertex_label_colors();
+  return true;
+}
+
+bool LibiglMeshT::read_vertex_values(const std::string& _filename, bool _normalized) {
+  VectorXf VV;
+  if (!Utils::read_eigen_matrix_from_file(_filename, &VV)) {
+    return false;
+  }
+
+  if (VV.size() != V_.rows()) {
+    LOG(WARNING) << "Number of vertex values does not match number of vertices.";
+    return false;
+  }
+
+  VC_ = compute_color_map(VV, _normalized);
+
+  if (renderer_ == nullptr) {
+    LOG(WARNING) << "Renderer is not set";
+  } else {
+    renderer_->set_vertex_colors(VC_);
+  }
+
+  return true;
+}
 
 bool LibiglMeshT::read_face_labels(const std::string& _filename) {
   FL_ = VectorXi(n_faces());
@@ -330,6 +365,26 @@ bool LibiglMeshT::write_face_labels(const std::string& _filename) {
   return true;
 }
 
+void LibiglMeshT::set_vertex_label_colors() {
+  if (VL_.rows() != V_.rows()) {
+    LOG(WARNING) << "Number of vertex labels does not match number of vertexs.";
+    return;
+  }
+
+  VC_ = MatrixXf(n_vertices(), 3);
+  for (int pid = 0; pid < n_vertices(); ++pid) {
+    Vector3f color;
+    Utils::random_label_rgb_color(VL_(pid), &color);
+    VC_.row(pid) = color.transpose();
+  }
+
+  if (renderer_ == nullptr) {
+    LOG(WARNING) << "Renderer is not set";
+  } else {
+    renderer_->set_vertex_colors(VC_);
+  }
+}
+
 void LibiglMeshT::set_face_label_colors() {
   if (FL_.rows() != F_.rows()) {
     LOG(WARNING) << "Number of face labels does not match number of faces.";
@@ -367,7 +422,7 @@ bool LibiglMeshT::write_point_labels(const std::string& _filename) {
   return true;
 }
 
-bool LibiglMeshT::read_point_values(const std::string& _filename) {
+bool LibiglMeshT::read_point_values(const std::string& _filename, bool _normalized) {
   VectorXf PV;
   if (!Utils::read_eigen_matrix_from_file(_filename, &PV)) {
     return false;
@@ -378,7 +433,7 @@ bool LibiglMeshT::read_point_values(const std::string& _filename) {
     return false;
   }
 
-  PC_ = compute_color_map(PV);
+  PC_ = compute_color_map(PV, _normalized);
 
   if (renderer_ == nullptr) {
     LOG(WARNING) << "Renderer is not set";
@@ -409,13 +464,15 @@ void LibiglMeshT::set_point_label_colors() {
   }
 }
 
-MatrixXf LibiglMeshT::compute_color_map(const VectorXf& _values) {
+MatrixXf LibiglMeshT::compute_color_map(const VectorXf& _values, bool _normalized) {
   const int n_values = _values.size();
   MatrixXf colors = MatrixXf(n_values, 3);
   colors.setZero();
 
-  const float vmin = _values.minCoeff();
-  const float vmax = _values.maxCoeff();
+  // NOTE:
+  // '_normalized' means that the '_values' are in [0, 1] range.
+  const float vmin = (_normalized) ? 0.0f : _values.minCoeff();
+  const float vmax = (_normalized) ? 1.0f : _values.maxCoeff();
   const float dv = vmax - vmin;
 
   if (dv > 1.0e-8) {
@@ -506,6 +563,18 @@ void LibiglMeshT::pre_processing() {
     }
   }
 
+  if (FLAGS_vertex_labels != "") {
+    if (!read_vertex_labels(FLAGS_vertex_labels)) {
+      return;
+    }
+  }
+
+  if (FLAGS_vertex_values != "") {
+    if (!read_vertex_values(FLAGS_vertex_values, FLAGS_vertex_values_normalized)) {
+      return;
+    }
+  }
+
   if (FLAGS_face_labels != "") {
     if (!read_face_labels(FLAGS_face_labels)) {
       return;
@@ -525,7 +594,7 @@ void LibiglMeshT::pre_processing() {
   }
 
   if (FLAGS_point_values != "") {
-    if (!read_point_values(FLAGS_point_values)) {
+    if (!read_point_values(FLAGS_point_values, FLAGS_point_values_normalized)) {
       return;
     }
   }

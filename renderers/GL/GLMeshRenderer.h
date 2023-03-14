@@ -32,10 +32,6 @@ class GLMeshRenderer : public LibiglMeshRendererT {
     GLMeshRenderer(const int _width, const int _height);
     virtual ~GLMeshRenderer();
 
-	// Static variables.
-	private:
-
-	public:
     // Virtual functions.
     virtual const Matrix4f& get_projection() const;
     virtual const Matrix4f& get_modelview() const;
@@ -44,13 +40,14 @@ class GLMeshRenderer : public LibiglMeshRendererT {
 
     virtual void set_mesh(
         const Eigen::MatrixXd& _V, const Eigen::MatrixXi& _F);
+    virtual void set_vertex_colors(const Eigen::MatrixXf& _VC);
     virtual void set_face_colors(const Eigen::MatrixXf& _FC);
-		virtual void set_vertex_normals(const Eigen::MatrixXd& _VN);
+    virtual void set_vertex_normals(const Eigen::MatrixXd& _VN);
     virtual void clear_mesh();
 
     virtual void set_point_cloud(const Eigen::MatrixXd& _P);
     virtual void set_point_colors(const Eigen::MatrixXf& _PC);
-		virtual void set_point_normals(const Eigen::MatrixXd& _PN);
+    virtual void set_point_normals(const Eigen::MatrixXd& _PN);
     virtual void clear_point_cloud();
 
     virtual void run_loop();
@@ -69,6 +66,7 @@ class GLMeshRenderer : public LibiglMeshRendererT {
     Matrix<int, Dynamic, 3, RowMajor> F_;
     Matrix<double, Dynamic, 3, RowMajor> VN_;
     Matrix<double, Dynamic, 3, RowMajor> FN_;
+    Matrix<float, Dynamic, 3, RowMajor> VC_;
     Matrix<float, Dynamic, 3, RowMajor> FC_;
 
     // Point cloud.
